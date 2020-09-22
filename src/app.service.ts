@@ -26,12 +26,16 @@ export class AppService {
     const scrypta = new ScryptaCore
     let xsid = await scrypta.readxKey(process.env.MAIN_PWD, process.env.MAIN_SID)
     if (xsid !== false) {
-      // TODO: HASH E-MAIL
-      // TODO: DERIVE NUMBER FROM HASH
-      // TODO: DERIVE CORRECT KEY
-      // TODO: WRITE PUBKEY IN DB
-      // TODO: RETURN OBJECT
-      return true;
+      
+      let hash = await scrypta.hash(request.email)
+      let path = await scrypta.hashtopath(hash)
+      let derived = await scrypta.deriveKeyFromSeed(xsid.seed, path)
+
+      return {
+        name: request.name,
+        email: request.email,
+        address: derived.pub
+      };
     }else{
       return { message: "Error while registering author.", error: true}
     }
