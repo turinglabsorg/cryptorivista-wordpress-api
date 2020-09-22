@@ -70,7 +70,9 @@ async function parse() {
           if (masterBalance.balance > 0.5) {
             for (let k in feed.items) {
               let item = feed.items[k]
-              console.log('CHECKING ITEM #' + i, item.title + ' PUBLISHED AT ' + item.link + ' WRITTEN BY ' + item.creator)
+              console.log('CHECKING ITEM #' + i, item.title)
+              console.log('-> PUBLISHED AT ' + item.link)
+              console.log('--> WRITTEN BY ' + item.creator)
               let hash = await scrypta.hash(item.creator)
               let path = await scrypta.hashtopath(hash)
               let authorKey = await scrypta.deriveKeyFromSeed(xsid.seed, path)
@@ -84,17 +86,17 @@ async function parse() {
                 xpub: xsid.xpub
               }
 
-              console.log('AUTHOR ADDRESS IS', authorKey.pub)
+              console.log('---> AUTHOR ADDRESS IS', authorKey.pub)
               let balance = await scrypta.get('/balance/' + author.address)
-              console.log('BALANCE IS', balance.balance, 'LYRA')
+              console.log('----> BALANCE IS', balance.balance, 'LYRA')
 
               let content = LZUTF8.compress(item['content:encoded'], { outputEncoding: 'Base64' });
               let bytes = content.length
               let fees = Math.ceil(bytes / 7500) * 0.001
-              console.log('FEES ARE', fees, 'LYRA')
+              console.log('-----> FEES ARE', fees, 'LYRA')
 
               if (balance.balance < fees) {
-                console.log('NEED TO FUND ADDRESS', author.address)
+                console.log('-----> NEED TO FUND ADDRESS', author.address)
               }
               i++
             }
