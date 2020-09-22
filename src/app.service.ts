@@ -23,28 +23,22 @@ export class AppService {
     return response;
   }
 
-  async registerAuthor(request): Promise<Object> {
+  async returnAuthor(request): Promise<Object> {
     const scrypta = new ScryptaCore
     let xsid = await scrypta.readxKey(process.env.MAIN_PWD, process.env.MAIN_SID)
     if (xsid !== false) {
-
-      let hash = await scrypta.hash(request.email)
+      let hash = await scrypta.hash(request.name)
       let path = await scrypta.hashtopath(hash)
-      let derived = await scrypta.deriveKeyFromSeed(xsid.seed, path)
+      let derived = await scrypta.deriveKeyfromXPub(xsid.xpub, path)
+
       let author = {
         name: request.name,
-        email: request.email,
         hash: hash, 
-        _id: derived.pub
+        address: derived.pub,
+        path: path,
+        xpub: xsid.xpub
       }
-      try{
-        const db = new PouchDB('wp-news')
-        db.put(author).catch(e => {
-          console.log('AUTHOR EXISTS')
-        });
-      }catch(e){
-        console.log('ERROR ON STORING AUTHOR', e)
-      }
+      
       return author;
     }else{
       return { message: "Error while registering author.", error: true}

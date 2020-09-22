@@ -10,10 +10,10 @@ export class AppController {
     return this.appService.getIdanodeStatus();
   }
 
-  @Post('register')
-  async registerAuthor(@Body() request): Promise<Object> {
-    if(request.name !== undefined && request.email !== undefined){
-      return await this.appService.registerAuthor(request)
+  @Post('author')
+  async returnAuthor(@Body() request): Promise<Object> {
+    if(request.name !== undefined){
+      return await this.appService.returnAuthor(request)
     }else{
       return JSON.stringify({
         error: true,
