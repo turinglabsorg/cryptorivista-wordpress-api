@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common'
 const ScryptaCore = require('@scrypta/core')
 require('dotenv').config()
+import * as PouchDB from 'pouchdb'
 
 @Injectable()
 export class AppService {
@@ -26,16 +27,22 @@ export class AppService {
     const scrypta = new ScryptaCore
     let xsid = await scrypta.readxKey(process.env.MAIN_PWD, process.env.MAIN_SID)
     if (xsid !== false) {
-      
+
       let hash = await scrypta.hash(request.email)
       let path = await scrypta.hashtopath(hash)
       let derived = await scrypta.deriveKeyFromSeed(xsid.seed, path)
-
-      return {
+      let author = {
         name: request.name,
         email: request.email,
-        address: derived.pub
-      };
+        _id: derived.pub
+      }
+      try{
+        const db = new PouchDB('wp-news')
+        db.put(author);
+      }catch(e){
+        console.log('ERROR ON STORING AUTHOR', e)
+      }
+      return author;
     }else{
       return { message: "Error while registering author.", error: true}
     }
