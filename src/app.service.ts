@@ -34,11 +34,14 @@ export class AppService {
       let author = {
         name: request.name,
         email: request.email,
+        hash: hash, 
         _id: derived.pub
       }
       try{
         const db = new PouchDB('wp-news')
-        db.put(author);
+        db.put(author).catch(e => {
+          console.log('AUTHOR EXISTS')
+        });
       }catch(e){
         console.log('ERROR ON STORING AUTHOR', e)
       }
