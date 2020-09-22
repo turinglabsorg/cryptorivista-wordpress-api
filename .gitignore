@@ -6,6 +6,7 @@ main-linux
 main-macos
 main-win.exe
 db/
+.env
 
 # Logs
 logs
