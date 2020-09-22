@@ -1,6 +1,7 @@
 {
   "compilerOptions": {
     "module": "commonjs",
+    "allowSyntheticDefaultImports": true,
     "declaration": true,
     "removeComments": true,
     "emitDecoratorMetadata": true,
@@ -11,5 +12,5 @@
     "baseUrl": "./",
     "incremental": true
   },
-  "exclude": ["node_modules", "dist", "db"]
+  "exclude": ["node_modules", "dist", "db", "wp-news*", "INIT"]
 }
