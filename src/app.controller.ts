@@ -10,6 +10,18 @@ export class AppController {
     return this.appService.getIdanodeStatus();
   }
 
+  @Post('register')
+  async registerAuthor(@Body() request): Promise<Object> {
+    if(request.name !== undefined && request.email !== undefined){
+      return await this.appService.registerAuthor(request)
+    }else{
+      return JSON.stringify({
+        error: true,
+        message: "Endpoint not defined"
+      })
+    }
+  }
+
   @Post('post')
   async postRequest(@Body() request): Promise<Object> {
     if(request.endpoint !== undefined){
