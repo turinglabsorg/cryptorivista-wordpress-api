@@ -24,7 +24,7 @@
     "@nestjs/common": "^7.4.4",
     "@nestjs/core": "^7.4.4",
     "@nestjs/platform-express": "^7.4.4",
-    "@scrypta/core": "^2.4.0",
+    "@scrypta/core": "^2.4.2",
     "@types/pouchdb": "^6.4.0",
     "command-line-args": "^5.1.1",
     "dotenv": "^8.2.0",

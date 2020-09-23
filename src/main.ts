@@ -3,7 +3,9 @@ import { AppModule } from './app.module'
 const ScryptaCore = require('@scrypta/core')
 require('dotenv').config()
 const scrypta = new ScryptaCore
+scrypta.staticnodes = true
 import * as PouchDB from 'pouchdb'
+import { scrypt, sign } from 'crypto'
 PouchDB.plugin(require('pouchdb-find'))
 const fs = require('fs')
 let Parser = require('rss-parser')
@@ -38,7 +40,7 @@ async function bootstrap() {
       parse()
       setInterval(function () {
         parse()
-      }, 30000)
+      }, 60000)
     } else {
       console.log('UNABLE TO READ MAIN SID, WRONG PASSWORD.')
     }
@@ -89,15 +91,78 @@ async function parse() {
               console.log('---> AUTHOR ADDRESS IS', authorKey.pub)
               let balance = await scrypta.get('/balance/' + author.address)
               console.log('----> BALANCE IS', balance.balance, 'LYRA')
+              item.compressed = LZUTF8.compress(item['content:encoded'], { outputEncoding: 'Base64' })
+              item.creator = LZUTF8.compress(item.creator, { outputEncoding: 'Base64' })
+              item.title = LZUTF8.compress(item.title, { outputEncoding: 'Base64' })
+              item.link = LZUTF8.compress(item.link, { outputEncoding: 'Base64' })
+              item.guid = LZUTF8.compress(item.guid, { outputEncoding: 'Base64' })
+              item.tags = LZUTF8.compress(JSON.stringify(item.categories), { outputEncoding: 'Base64' })
 
-              let content = LZUTF8.compress(item['content:encoded'], { outputEncoding: 'Base64' });
-              let bytes = content.length
-              let fees = Math.ceil(bytes / 7500) * 0.001
-              console.log('-----> FEES ARE', fees, 'LYRA')
+              item['pubdate'] = item['isoDate']
+              delete item['content:encoded']
+              delete item['content:encodedSnippet']
+              delete item['dc:creator']
+              delete item['categories']
+              delete item['pubDate']
+              delete item['content']
+              delete item['contentSnippet']
+              delete item['isoDate']
 
-              if (balance.balance < fees) {
-                console.log('-----> NEED TO FUND ADDRESS', author.address)
+              let signed = await scrypta.signMessage(masterKey.prv, JSON.stringify(item))
+              let toStore = JSON.stringify(signed)
+
+              let uuid = ''
+              let guidHash = await scrypta.hash(item.guid)
+              let newsHash = await scrypta.hash(toStore)
+              let needWrite = false
+              let check = await scrypta.post('/read', {address: author.address, refID: guidHash, protocol: 'news://'})
+              if(check.data.length === 0){
+                needWrite = true
+              }else{
+                let toCheck = check.data[0].data
+                let checkHash = await scrypta.hash(JSON.stringify(toCheck))
+                if(checkHash !== newsHash){
+                  console.log('HASH IS CHANGED, NEED TO UPDATE!')
+                  uuid = check.data[0].uuid
+                  needWrite = true
+                }else{
+                  console.log('HASH NOT CHANGED, IGNORING NEWS.')
+                }
               }
+
+              if (needWrite) {
+                let bytes = toStore.length
+                let fees = Math.ceil(bytes / 7500) * 0.001
+                console.log('-----> FEES ARE', fees, 'LYRA')
+
+                if (balance.balance < fees) {
+                  console.log('-----> NEED TO FUND ADDRESS', author.address)
+                  let funded = await scrypta.fundAddress(masterKey.prv, author.address, fees)
+                  await scrypta.sleep(1000)
+                  if (funded === true) {
+                    balance = await scrypta.get('/balance/' + author.address)
+                  } else {
+                    console.log('ERROR WHILE FUNDING ADDRESS')
+                  }
+                }
+
+                if (balance.balance >= fees) {
+                  console.log('WRITING NEWS INTO THE BLOCKCHAIN!')
+                  let wallet = await scrypta.importPrivateKey(author.prv, 'TEMPORARY', false)
+                  scrypta.debug = true
+                  let stored
+                  // let stored = await scrypta.write(wallet.walletstore, 'TEMPORARY', toStore, '', guidHash, 'news://', uuid)
+                  console.log(stored)
+                  if (stored !== false) {
+                    console.log('WRITTEN CORRECTLY INTO THE BLOCKCHAIN!')
+                  }else{
+                    console.log('ERROR WHILE WRITING NEWS')
+                  }
+                  scrypta.debug = false
+                  
+                }
+              }
+
               i++
             }
           } else {
